@@ -20,6 +20,10 @@ p2 <- list(
   tar_target(p2_camels_data_all,
              p2_camels_data_list |> 
                reduce(left_join, by = 'gauge_id') |> 
-               relocate(gauge_name, huc_02, .after = gauge_id))
+               relocate(gauge_name, huc_02, .after = gauge_id)),
+  
+  # Prepare all CAMELS numeric data for quick summary plotting/exploration
+  tar_target(p2_camels_data_numeric_long,
+             camels_prep_data_numeric(p2_camels_data_all))
   
 )

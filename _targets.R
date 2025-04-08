@@ -17,6 +17,7 @@ tar_option_set(
 # Source the phase target recipe files to load the target lists
 source('01_download.R')
 source('02_munge.R')
+source('03_summarize.R')
 
 # Combine targets from phase files
-c(p1, p2)
+c(p1, p2, p3)
