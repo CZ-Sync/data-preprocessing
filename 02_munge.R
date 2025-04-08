@@ -4,10 +4,19 @@ tar_source('02_munge/src')
 
 p2 <- list(
   
-  #### Loading raw data inputs from Google Drive ####
+  # Declare the preprocessed folder ID to use for uploads
+  tar_target(p2_gd_folder_20_Preprocessed,
+             googledrive::as_id('1afBkfYH81EemTIQvZtpMTtKYkiGO8IhM')),
   
+  #### Google Drive `00_Raw` folder ####
   
-  #### Loading & merging CAMELS data ####
+  ##### Loading, merging, munging #####
+  
+  ##### Uploading processed data #####
+  
+  #### CAMELS data ####
+  
+  ##### Loading, merging, munging #####
   
   # Load each CAMELS text file as a tibble
   tar_target(p2_camels_data_list,
@@ -24,6 +33,23 @@ p2 <- list(
   
   # Prepare all CAMELS numeric data for quick summary plotting/exploration
   tar_target(p2_camels_data_numeric_long,
-             camels_prep_data_numeric(p2_camels_data_all))
+             camels_prep_data_numeric(p2_camels_data_all)),
+  
+  ##### Uploading processed data #####
+  
+  # Save intermediate data as a XLSX file
+  # Saving as XLSX because Google Drive is dropping leading zeros on the gage numbers
+  tar_target(p2_camels_data_all_xlsx, {
+    file_out <- '02_munge/out/camels_data_all.xlsx'
+    writexl::write_xlsx(p2_camels_data_all, file_out)
+    return(file_out)
+  }, format = 'file'), 
+  
+  # Upload this CSV to Google Drive
+  tar_target(p2_camels_data_all_gd,
+             googledrive::drive_upload(p2_camels_data_all_xlsx,
+                                       p2_gd_folder_20_Preprocessed,
+                                       name = basename(p2_camels_data_all_xlsx),
+                                       overwrite = TRUE))
   
 )

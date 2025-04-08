@@ -8,7 +8,8 @@ tar_option_set(
   packages = c(
     'googledrive',
     'httr2',
-    'tidyverse'
+    'tidyverse',
+    'writexl'
   ), 
   # Setting default storage format to `qs`, which is fast
   format = "qs"

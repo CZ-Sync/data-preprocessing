@@ -6,11 +6,11 @@ p1 <- list(
   
   #### Downloading raw data inputs from Google Drive ####
   
-  tar_target(p1_gd_folder_raw_data,
+  tar_target(p1_gd_folder_10_Raw,
              googledrive::as_id('1SagFhGwxrJMRygiENTWesFhSd64eJSfq')),
   
   tar_target(p1_list_raw_data_files,
-             googledrive::drive_ls(p1_gd_folder_raw_data)),
+             googledrive::drive_ls(p1_gd_folder_10_Raw)),
   
   # TODO: insert commands that map over the files in the folder and download
   
