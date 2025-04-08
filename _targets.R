@@ -7,6 +7,7 @@ tar_option_set(
   # Packages targets need to run
   packages = c(
     'googledrive',
+    'httr2',
     'tidyverse'
   ), 
   # Setting default storage format to `qs`, which is fast
