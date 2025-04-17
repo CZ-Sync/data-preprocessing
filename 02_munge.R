@@ -40,7 +40,7 @@ p2 <- list(
   # Save intermediate data as a XLSX file
   # Saving as XLSX because Google Drive is dropping leading zeros on the gage numbers
   tar_target(p2_camels_data_all_xlsx, {
-    file_out <- '02_munge/out/camels_data_all.xlsx'
+    file_out <- '02_munge/out/camels_attributes.xlsx'
     writexl::write_xlsx(p2_camels_data_all, file_out)
     return(file_out)
   }, format = 'file'), 
