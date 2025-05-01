@@ -88,10 +88,11 @@ p2 <- list(
   }, format = 'file'),
   
   # Prepare all AmeriFlux data for quick summary plotting/exploration
-  tar_target(p2_ameriflux_data_long,
-             read_csv(p2_ameriflux_data_all_csv,
-                      show_col_types = FALSE) %>% 
-               convert_ameriflux_to_long()),
+  # Convert hourly to daily so that we have fewer data points
+  tar_target(p2_ameriflux_daily_long,
+             read_feather(p2_ameriflux_data_feather) %>% 
+               convert_ameriflux_to_long_daily(),
+             pattern = map(p2_ameriflux_data_feather)),
   
   ##### Uploading processed data #####
   

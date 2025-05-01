@@ -28,7 +28,7 @@ p3 <- list(
   # Create a PNG showing boxplots of AmeriFlux variable values by vegetation category
   tar_target(p3_ameriflux_dist_by_veg_png,
              ameriflux_boxplot_variable_vals('03_summarize/figures/ameriflux_boxplot.png',
-                                             p2_ameriflux_data_long,
+                                             p2_ameriflux_daily_long,
                                              p2_ameriflux_site_info),
              format = 'file'),
   
@@ -37,7 +37,7 @@ p3 <- list(
   tar_target(p3_ameriflux_timeseries_png,
              ameriflux_timeseries(sprintf('03_summarize/figures/ameriflux_timeseries_%s.png',
                                           p3_ameriflux_timeseries_sites),
-                                  p2_ameriflux_data_long,
+                                  p2_ameriflux_daily_long,
                                   p3_ameriflux_timeseries_sites),
              pattern = map(p3_ameriflux_timeseries_sites),
              format = 'file')

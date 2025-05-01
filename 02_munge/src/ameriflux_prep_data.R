@@ -1,38 +1,37 @@
 
-#' @title Helper function to pivot AmeriFlux from wide to long
+#' @title Function to calc daily averages & pivot AmeriFlux from wide to long
 #' @description This function is used to take wide AmeriFlux data, where each
 #' variable is a column and every row is a different timestep and convert to
 #' long so that variables appear in a column and their values are in a column
-#' next to them. The tricky part that is completed here is to retain any of the
-#' variable's corresponding QC (quality control) column and put in a single 
-#' QC column. The overall QC column will have NAs if a variable did not have 
-#' its own QC column.
+#' next to them. This function also condenses the hourly data into daily.
 #' 
 #' @param in_data a tibble of AmeriFlux data in wide format with at least the
 #' columns `site_id`, `date_time` (added as a custom munge step) and `is_night` 
 #' as well as a column per variable and corresponding QC columns (named `{VARIABLE}_QC`).
 #' 
-#' @returns a tibble with the columns `site_id`, `date_time`, `is_night`, 
-#' `variable`, `value`, and `qc`
+#' @returns a tibble with the columns `site_id`, `date`, `variable`, `value`
 #' 
-convert_ameriflux_to_long <- function(in_data) {
+convert_ameriflux_to_long_daily <- function(in_data) {
   in_data %>%
+    # Add a column for date without the times
+    mutate(date = as.Date(date_time)) %>% 
+    
+    # Remove `_QC` columns and `is_night` since those are specific to hourly data
+    dplyr::select(site_id, date, everything(), 
+                  -ends_with('_QC'), -is_night, -date_time) %>% 
+    
+    # Now summarize each variable into an average per day
+    group_by(site_id, date) %>% 
+    summarize(across(!any_of(c('site_id', 'date')), 
+                     ~mean(.x, na.rm = TRUE)),
+              .groups = 'keep') %>% 
+    
+    # Switch daily means to long format
     pivot_longer(
-      cols = -c(site_id, date_time, is_night),
-      names_to = "name",
+      cols = -c(site_id, date),
+      names_to = "variable",
       values_to = "value"
-    ) %>%
-    mutate(
-      # Separate base variable name and QC flag
-      variable = str_remove(name, "_QC$"),
-      field = if_else(str_detect(name, "_QC$"), "qc", "value")
-    ) %>%
-    select(-name) %>%
-    pivot_wider(
-      names_from = field,
-      values_from = value
-    ) %>%
-    select(site_id, date_time, is_night, variable, value, qc)
+    )
 }
 
 #' @title Load and clean AmeriFlux data
