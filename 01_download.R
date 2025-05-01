@@ -45,8 +45,8 @@ p1 <- list(
                # Require a DATA_START year to be provided
                filter(!is.na(DATA_START))),
   
-  tar_target(p1_ameriflux_sites, sort(p1_ameriflux_site_info$SITE_ID)[2:3]),
   
+  tar_target(p1_ameriflux_sites, sort(p1_ameriflux_site_info$SITE_ID)),
   tar_target(p1_ameriflux_data_zip_status,
              download_ameriflux_safely(
                user_id = 'lindsayplatt',
