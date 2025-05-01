@@ -35,10 +35,10 @@ convert_ameriflux_to_long <- function(in_data) {
     select(date_time, is_night, variable, value, qc)
 }
 
-#' @title Load, clean, and re-format AmeriFlux data
+#' @title Load and clean AmeriFlux data
 #' @description This function loads raw hourly AmeriFlux data and prepares it
 #' for analysis by filling NAs properly, converting timestamps to a `POSIXct`
-#' object, pivoting to long, and converting binary columns to logicals.
+#' object, and converting binary columns to logicals.
 #' 
 #' @param out_file a character string of where to save the feather file
 #' @param in_file a character string to a CSV file of AmeriFlux data in wide 
@@ -46,11 +46,11 @@ convert_ameriflux_to_long <- function(in_data) {
 #' single site.
 #' 
 #' @returns a filepath to the feather file containing the columns `date_time`, 
-#' `is_night`, `variable`, `value`, and `qc`
+#' `is_night`, and then a number of AmeriFlux variable or QC columns
 #'
 load_and_prep_ameriflux_data <- function(out_file, in_file) {
   
-  amf_data <- read_csv(in_file, col_types = cols()) %>% 
+  amf_data <- read_csv(in_file, show_col_types = FALSE) %>% 
     
     # Replace `-9999` as NAs
     mutate(across(where(is.numeric), ~na_if(., -9999))) %>% 
@@ -63,12 +63,6 @@ load_and_prep_ameriflux_data <- function(out_file, in_file) {
     # Adjust night from a 0 or 1 to F or T
     mutate(is_night = as.logical(NIGHT)) %>% 
     select(-NIGHT) %>% 
-        
-    # Convert to long but keep QC & NIGHT as columns next to the variables
-    convert_ameriflux_to_long() %>% 
-    
-    # Remove missing values (don't need to store NAs)
-    drop_na(value) %>% 
     
     # Arrange by DateTime
     arrange(date_time) %>% 
