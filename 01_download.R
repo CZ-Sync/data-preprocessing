@@ -67,7 +67,7 @@ p1 <- list(
   tar_target(p1_ameriflux_data_csv, 
              move_file_from_zip('01_download/out',
                                 p1_ameriflux_data_zip_exists$download_result,
-                                'AMF_US-[A-z|0-9]{3}_FLUXNET_SUBSET_HH_[0-9]{4}-[0-9]{4}_[0-9]{1}-[0-9]{1}.csv'),
+                                'AMF_US-[A-z|0-9]{3}_FLUXNET_SUBSET_(HH|HR)_[0-9]{4}-[0-9]{4}_[0-9]{1}-[0-9]{1}.csv'),
              pattern = map(p1_ameriflux_data_zip_exists),
              format = 'file')
   
