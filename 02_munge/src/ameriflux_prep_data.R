@@ -38,19 +38,23 @@ convert_ameriflux_to_long <- function(in_data) {
 #' @title Load and clean AmeriFlux data
 #' @description This function loads raw hourly AmeriFlux data and prepares it
 #' for analysis by filling NAs properly, converting timestamps to a `POSIXct`
-#' object, and converting binary columns to logicals.
+#' object in the correct local time, and converting binary columns to logicals.
 #' 
 #' @param out_file a character string of where to save the feather file
 #' @param in_file a character string to a CSV file of AmeriFlux data in wide 
 #' format with all variables as columns and rows as different time steps for a
 #' single site.
+#' @param site_info a tibble with at least the columns `site_id` and `timezone`,
+#' see `prep_ameriflux_site_info()` for details
 #' @param site_id the AmeriFlux site id for this data
 #' 
 #' @returns a filepath to the feather file containing the columns `site_id`, 
 #' `date_time`, `is_night`, and then a number of AmeriFlux variable or QC columns
 #'
-load_and_prep_ameriflux_data <- function(out_file, in_file, site_id) {
+load_and_prep_ameriflux_data <- function(out_file, in_file, site_info, site_id) {
   
+  site_tz <- site_info %>% dplyr::filter(site_id == site_id) %>% pull(timezone)
+
   amf_data <- read_csv(in_file, show_col_types = FALSE) %>% 
     
     # Add the site id
@@ -62,9 +66,11 @@ load_and_prep_ameriflux_data <- function(out_file, in_file, site_id) {
     # Adjust night from a 0 or 1 to F or T
     mutate(is_night = as.logical(NIGHT)) %>% 
     
-    # Convert numeric time to a datetime format
-    # TODO: Will need to add in timezone later. Defaulting to UTC for now.
+    # Convert numeric time to a datetime format, then add timezone
+    # Using `with_tz()` after because weirdly some values (e.g. 201603130200)
+    # fail when we try to add the timezone inside of `as_datetime()`.
     mutate(date_time = as_datetime(as.character(TIMESTAMP_START), format = '%Y%m%d%H%M')) %>%
+    mutate(date_time = with_tz(date_time, site_tz)) %>% 
     
     # Now select relevant columns
     select(site_id, date_time, is_night, everything(), 

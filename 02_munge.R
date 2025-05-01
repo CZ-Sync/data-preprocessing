@@ -74,6 +74,7 @@ p2 <- list(
                out_file = gsub('.csv', '.feather', gsub('01_download/out', '02_munge/tmp', 
                                                         p1_ameriflux_data_csv)), 
                in_file = p1_ameriflux_data_csv,
+               site_info = p2_ameriflux_site_info,
                site_id = str_extract(p1_ameriflux_data_csv, 'US-[A-z|0-9]{3}')),
              pattern = map(p1_ameriflux_data_csv),
              format = 'file'),
