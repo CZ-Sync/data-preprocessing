@@ -9,16 +9,16 @@
 #' its own QC column.
 #' 
 #' @param in_data a tibble of AmeriFlux data in wide format with at least the
-#' columns `date_time` (added as a custom munge step) and `is_night` as well as a
-#' column per variable and corresponding QC columns (named `{VARIABLE}_QC`).
+#' columns `site_id`, `date_time` (added as a custom munge step) and `is_night` 
+#' as well as a column per variable and corresponding QC columns (named `{VARIABLE}_QC`).
 #' 
-#' @returns a tibble with the columns `date_time`, `is_night`, `variable`,
-#' `value`, and `qc`
+#' @returns a tibble with the columns `site_id`, `date_time`, `is_night`, 
+#' `variable`, `value`, and `qc`
 #' 
 convert_ameriflux_to_long <- function(in_data) {
   in_data %>%
     pivot_longer(
-      cols = -c(date_time, is_night),
+      cols = -c(site_id, date_time, is_night),
       names_to = "name",
       values_to = "value"
     ) %>%
@@ -32,7 +32,7 @@ convert_ameriflux_to_long <- function(in_data) {
       names_from = field,
       values_from = value
     ) %>%
-    select(date_time, is_night, variable, value, qc)
+    select(site_id, date_time, is_night, variable, value, qc)
 }
 
 #' @title Load and clean AmeriFlux data
@@ -44,25 +44,31 @@ convert_ameriflux_to_long <- function(in_data) {
 #' @param in_file a character string to a CSV file of AmeriFlux data in wide 
 #' format with all variables as columns and rows as different time steps for a
 #' single site.
+#' @param site_id the AmeriFlux site id for this data
 #' 
-#' @returns a filepath to the feather file containing the columns `date_time`, 
-#' `is_night`, and then a number of AmeriFlux variable or QC columns
+#' @returns a filepath to the feather file containing the columns `site_id`, 
+#' `date_time`, `is_night`, and then a number of AmeriFlux variable or QC columns
 #'
-load_and_prep_ameriflux_data <- function(out_file, in_file) {
+load_and_prep_ameriflux_data <- function(out_file, in_file, site_id) {
   
   amf_data <- read_csv(in_file, show_col_types = FALSE) %>% 
+    
+    # Add the site id
+    mutate(site_id = site_id) %>% 
     
     # Replace `-9999` as NAs
     mutate(across(where(is.numeric), ~na_if(., -9999))) %>% 
     
+    # Adjust night from a 0 or 1 to F or T
+    mutate(is_night = as.logical(NIGHT)) %>% 
+    
     # Convert numeric time to a datetime format
     # TODO: Will need to add in timezone later. Defaulting to UTC for now.
     mutate(date_time = as_datetime(as.character(TIMESTAMP_START), format = '%Y%m%d%H%M')) %>%
-    select(date_time, everything(), -starts_with('TIMESTAMP')) %>% 
     
-    # Adjust night from a 0 or 1 to F or T
-    mutate(is_night = as.logical(NIGHT)) %>% 
-    select(-NIGHT) %>% 
+    # Now select relevant columns
+    select(site_id, date_time, is_night, everything(), 
+           -starts_with('TIMESTAMP'), -NIGHT) %>% 
     
     # Arrange by DateTime
     arrange(date_time) %>% 
