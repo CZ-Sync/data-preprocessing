@@ -45,18 +45,25 @@ p1 <- list(
                # Require a DATA_START year to be provided
                filter(!is.na(DATA_START))),
   
-  
   tar_target(p1_ameriflux_sites, sort(p1_ameriflux_site_info$SITE_ID)),
+  
+  # Caution should be used when choosing to execute this command as it downloads 
+  # from all AmeriFlux CONUS sites and pings every single PI. Currently, we have
+  # this disabled from running by not supplying `user_id` or `user_email`. Should
+  # we need to refresh and redownload the data, we will need to add these back 
+  # in, but coordinate who will run the code as the AmeriFlux support team has
+  # requested that we do this infrequently until they disable the email features.
   tar_target(p1_ameriflux_data_zip_status,
              download_ameriflux_safely(
-               user_id = 'lindsayplatt',
-               user_email = 'lplatt@cuahsi.org',
+               user_id = '',
+               user_email = '',
                site_id = p1_ameriflux_sites,
                data_product = "FLUXNET",
                data_variant = "SUBSET", # Using SUBSET for now, https://fluxnet.org/data/fluxnet2015-dataset/subset-data-product/
                intended_use_text = "Eventually for an CONUS ET project, but testing R package downloads for now",
                out_dir = '01_download/tmp'
-             ), pattern = map(p1_ameriflux_sites)),
+             ), pattern = map(p1_ameriflux_sites), 
+             cue = 'never'),
   
   # Using the output tibble of download statuses for AmeriFlux data, 
   # filter to only those that successfully downloaded a file 
