@@ -10,6 +10,7 @@ tar_option_set(
     'arrow', 
     'googledrive',
     'httr2',
+    'StreamLightUtils', # Used for getting timezone from lat/long. Install with `remotes::install_packages('psavoy/StreamLightUtils')`
     'tidyverse',
     'writexl'
   ), 

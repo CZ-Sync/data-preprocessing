@@ -56,6 +56,18 @@ p2 <- list(
   
   ##### Loading, merging, munging #####
   
+  # Prepare a site metadata file to be uploaded
+  tar_target(p2_ameriflux_sites,
+             unique(p1_ameriflux_data_zip_exists$site_id)),
+  tar_target(p2_ameriflux_site_info,
+             prep_ameriflux_site_info(p1_ameriflux_site_info, 
+                                      p2_ameriflux_sites)),
+  tar_target(p2_ameriflux_site_info_csv, {
+    out_file <- '02_munge/out/ameriflux_site_info.csv'
+    write_csv(p2_ameriflux_site_info, out_file)
+    return(out_file)
+  }, format = 'file'),
+  
   # Map over each AmeriFlux CSV and munge it
   tar_target(p2_ameriflux_data_feather,
              load_and_prep_ameriflux_data(
@@ -72,8 +84,28 @@ p2 <- list(
     map(p2_ameriflux_data_feather, read_feather) %>% 
       bind_rows() %>% write_csv(out_file)
     return(out_file)
-  })
+  }, format = 'file'),
+  
+  # Prepare all AmeriFlux data for quick summary plotting/exploration
+  tar_target(p2_ameriflux_data_long,
+             read_csv(p2_ameriflux_data_all_csv,
+                      show_col_types = FALSE) %>% 
+               convert_ameriflux_to_long()),
   
   ##### Uploading processed data #####
+  
+  # Upload this CSV to Google Drive
+  tar_target(p2_ameriflux_site_info_gd,
+             drive_upload(p2_ameriflux_site_info_csv,
+                          p2_gd_folder_20_Preprocessed,
+                          name = basename(p2_ameriflux_site_info_csv),
+                          overwrite = TRUE)),
+  
+  # Upload this CSV to Google Drive
+  tar_target(p2_ameriflux_data_all_gd,
+             drive_upload(p2_ameriflux_data_all_csv,
+                          p2_gd_folder_20_Preprocessed,
+                          name = basename(p2_ameriflux_data_all_csv),
+                          overwrite = TRUE))
   
 )

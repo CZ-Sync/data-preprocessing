@@ -78,3 +78,44 @@ load_and_prep_ameriflux_data <- function(out_file, in_file, site_id) {
   
   return(out_file)
 }
+
+#' @title Prepare AmeriFlux site information
+#' @description This function adds a timezone and selects only relevant columns
+#' 
+#' @param site_info a tibble with AmeriFlux site metadata, see `amf_site_info()`
+#' @param site_ids a vector of the site_ids for which data was successfully downloaded
+#' 
+#' @returns a tibble with only rows of sites that had data downloaded and a
+#' subset of columns renamed to be lowercase or more understandable.
+#'
+prep_ameriflux_site_info <- function(site_info, site_ids) {
+  
+  site_info %>% 
+    # Filter to just those sites for which data was successfully downloaded
+    filter(SITE_ID %in% site_ids) %>%
+    
+    # Add the timezone based on lat/long using the `StreamLightUtils` pkg fxn `get_tz()`
+    rowwise() %>% 
+    mutate(TIMEZONE = get_tz(LOCATION_LAT, LOCATION_LONG, 
+                             # Assuming vals provided use WGS84
+                             site_crs = 4326)) %>% 
+    ungroup() %>% 
+    
+    # Select and rename the columns we want to keep
+    rename_with(tolower) %>% 
+    select(site_id, 
+           site_name, 
+           data_policy,
+           data_start,
+           data_end,
+           latitude = location_lat,
+           longitude = location_long,
+           elevation =  location_elev,
+           timezone,
+           avg_air_temp_degC = mat,
+           avg_precip_mm = map, 
+           IGBP_veg = igbp,
+           Koppen_clim_class = climate_koeppen)
+  
+}
+
