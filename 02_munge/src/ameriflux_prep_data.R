@@ -70,15 +70,6 @@ load_and_prep_ameriflux_data <- function(out_file, in_file) {
     # Remove missing values (don't need to store NAs)
     drop_na(value) %>% 
     
-    # For QC columns replace 0, 1, 2, or 3 with text to indicate quality
-    # Doing this because I feel the values are backwards - lower integer means better
-    # TODO: LEAVE AS 0-3 for now. Decide later to let this happen.
-    # mutate(qc = case_when(qc == 0 ~ "measured value",
-    #                       qc == 1 ~ "filled value, better quality",
-    #                       qc == 2 ~ "filled value, middle quality",
-    #                       qc == 3 ~ "filled value, worse quality",
-    #                       .default = NA_character_)) %>%
-    
     # Arrange by DateTime
     arrange(date_time) %>% 
     
