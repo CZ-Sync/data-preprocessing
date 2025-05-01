@@ -1,0 +1,89 @@
+
+#' @title Helper function to pivot AmeriFlux from wide to long
+#' @description This function is used to take wide AmeriFlux data, where each
+#' variable is a column and every row is a different timestep and convert to
+#' long so that variables appear in a column and their values are in a column
+#' next to them. The tricky part that is completed here is to retain any of the
+#' variable's corresponding QC (quality control) column and put in a single 
+#' QC column. The overall QC column will have NAs if a variable did not have 
+#' its own QC column.
+#' 
+#' @param in_data a tibble of AmeriFlux data in wide format with at least the
+#' columns `date_time` (added as a custom munge step) and `is_night` as well as a
+#' column per variable and corresponding QC columns (named `{VARIABLE}_QC`).
+#' 
+#' @returns a tibble with the columns `date_time`, `is_night`, `variable`,
+#' `value`, and `qc`
+#' 
+convert_ameriflux_to_long <- function(in_data) {
+  in_data %>%
+    pivot_longer(
+      cols = -c(date_time, is_night),
+      names_to = "name",
+      values_to = "value"
+    ) %>%
+    mutate(
+      # Separate base variable name and QC flag
+      variable = str_remove(name, "_QC$"),
+      field = if_else(str_detect(name, "_QC$"), "qc", "value")
+    ) %>%
+    select(-name) %>%
+    pivot_wider(
+      names_from = field,
+      values_from = value
+    ) %>%
+    select(date_time, is_night, variable, value, qc)
+}
+
+#' @title Load, clean, and re-format AmeriFlux data
+#' @description This function loads raw hourly AmeriFlux data and prepares it
+#' for analysis by filling NAs properly, converting timestamps to a `POSIXct`
+#' object, pivoting to long, and converting binary columns to logicals.
+#' 
+#' @param out_file a character string of where to save the feather file
+#' @param in_file a character string to a CSV file of AmeriFlux data in wide 
+#' format with all variables as columns and rows as different time steps for a
+#' single site.
+#' 
+#' @returns a filepath to the feather file containing the columns `date_time`, 
+#' `is_night`, `variable`, `value`, and `qc`
+#'
+load_and_prep_ameriflux_data <- function(out_file, in_file) {
+  
+  amf_data <- read_csv(in_file, col_types = cols()) %>% 
+    
+    # Replace `-9999` as NAs
+    mutate(across(where(is.numeric), ~na_if(., -9999))) %>% 
+    
+    # Convert numeric time to a datetime format
+    # TODO: Will need to add in timezone later. Defaulting to UTC for now.
+    mutate(date_time = as_datetime(as.character(TIMESTAMP_START), format = '%Y%m%d%H%M')) %>%
+    select(date_time, everything(), -starts_with('TIMESTAMP')) %>% 
+    
+    # Adjust night from a 0 or 1 to F or T
+    mutate(is_night = as.logical(NIGHT)) %>% 
+    select(-NIGHT) %>% 
+        
+    # Convert to long but keep QC & NIGHT as columns next to the variables
+    convert_ameriflux_to_long() %>% 
+    
+    # Remove missing values (don't need to store NAs)
+    drop_na(value) %>% 
+    
+    # For QC columns replace 0, 1, 2, or 3 with text to indicate quality
+    # Doing this because I feel the values are backwards - lower integer means better
+    # TODO: LEAVE AS 0-3 for now. Decide later to let this happen.
+    # mutate(qc = case_when(qc == 0 ~ "measured value",
+    #                       qc == 1 ~ "filled value, better quality",
+    #                       qc == 2 ~ "filled value, middle quality",
+    #                       qc == 3 ~ "filled value, worse quality",
+    #                       .default = NA_character_)) %>%
+    
+    # Arrange by DateTime
+    arrange(date_time) %>% 
+    
+    # Save as a feather file per site
+    write_feather(out_file)
+  
+  return(out_file)
+}

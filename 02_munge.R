@@ -47,9 +47,32 @@ p2 <- list(
   
   # Upload this CSV to Google Drive
   tar_target(p2_camels_data_all_gd,
-             googledrive::drive_upload(p2_camels_data_all_xlsx,
-                                       p2_gd_folder_20_Preprocessed,
-                                       name = basename(p2_camels_data_all_xlsx),
-                                       overwrite = TRUE))
+             drive_upload(p2_camels_data_all_xlsx,
+                          p2_gd_folder_20_Preprocessed,
+                          name = basename(p2_camels_data_all_xlsx),
+                          overwrite = TRUE)),
+  
+  #### AmeriFlux data ####
+  
+  ##### Loading, merging, munging #####
+  
+  # Map over each AmeriFlux CSV and munge it
+  tar_target(p2_ameriflux_data_feather,
+             load_and_prep_ameriflux_data(
+               out_file = gsub('.csv', '.feather', gsub('01_download/out', '02_munge/tmp', 
+                                                        p1_ameriflux_data_csv)), 
+               in_file = p1_ameriflux_data_csv),
+             pattern = map(p1_ameriflux_data_csv),
+             format = 'file'),
+  
+  # Combine all AmeriFlux feathers into a single file
+  tar_target(p2_ameriflux_data_all_csv, {
+    out_file <- '02_munge/out/ameriflux_data_all.csv'
+    map(p2_ameriflux_data_feather, read_feather) %>% 
+      bind_rows() %>% write_csv(out_file)
+    return(out_file)
+  })
+  
+  ##### Uploading processed data #####
   
 )
