@@ -6,6 +6,7 @@ library(targets)
 tar_option_set(
   # Packages targets need to run
   packages = c(
+    'amerifluxr',
     'googledrive',
     'httr2',
     'tidyverse',
