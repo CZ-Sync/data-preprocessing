@@ -18,3 +18,6 @@
 # {targets} pipeline artifacts
 _targets/
 */out/*
+*/tmp/*
+!*/out/.placeholder
+!*/tmp/.placeholder

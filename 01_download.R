@@ -32,6 +32,50 @@ p1 <- list(
                                                       p1_camels_data_names),
                                  file_local = file.path('01_download/out', p1_camels_data_names)),
              pattern = map(p1_camels_data_names),
+             format = 'file'),
+  
+  #### Downloading AmeriFlux data ####
+  
+  tar_target(p1_ameriflux_site_info,
+             amf_site_info() %>% 
+               # Keep CONUS sites only
+               filter(COUNTRY %in% 'USA', !STATE %in% c('AK', 'HI')) %>% 
+               # Ignore any sites that follow the LEGACY data policy
+               filter(DATA_POLICY != 'LEGACY') %>% 
+               # Require a DATA_START year to be provided
+               filter(!is.na(DATA_START))),
+  
+  tar_target(p1_ameriflux_sites, sort(p1_ameriflux_site_info$SITE_ID)),
+  
+  # Caution should be used when choosing to execute this command as it downloads 
+  # from all AmeriFlux CONUS sites and pings every single PI. Currently, we have
+  # this disabled from running by not supplying `user_id` or `user_email`. Should
+  # we need to refresh and redownload the data, we will need to add these back 
+  # in, but coordinate who will run the code as the AmeriFlux support team has
+  # requested that we do this infrequently until they disable the email features.
+  tar_target(p1_ameriflux_data_zip_status,
+             download_ameriflux_safely(
+               user_id = '',
+               user_email = '',
+               site_id = p1_ameriflux_sites,
+               data_product = "FLUXNET",
+               data_variant = "SUBSET", # Using SUBSET for now, https://fluxnet.org/data/fluxnet2015-dataset/subset-data-product/
+               intended_use_text = "Eventually for an CONUS ET project, but testing R package downloads for now",
+               out_dir = '01_download/tmp'
+             ), pattern = map(p1_ameriflux_sites), 
+             cue = tar_cue('never')),
+  
+  # Using the output tibble of download statuses for AmeriFlux data, 
+  # filter to only those that successfully downloaded a file 
+  tar_target(p1_ameriflux_data_zip_exists, 
+             p1_ameriflux_data_zip_status %>% 
+               filter(file.exists(download_result))),
+  
+  tar_target(p1_ameriflux_data_csv, 
+             move_file_from_zip('01_download/out',
+                                p1_ameriflux_data_zip_exists$download_result,
+                                'AMF_US-[A-z|0-9]{3}_FLUXNET_SUBSET_(HH|HR)_[0-9]{4}-[0-9]{4}_[0-9]{1}-[0-9]{1}.csv'),
+             pattern = map(p1_ameriflux_data_zip_exists),
              format = 'file')
   
 )
