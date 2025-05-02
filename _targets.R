@@ -1,6 +1,7 @@
 
 # Load packages required to define the pipeline:
 library(targets)
+library(tarchetypes) # Used for `tar_group_count()`
 
 # Set target options:
 tar_option_set(

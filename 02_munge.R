@@ -79,13 +79,27 @@ p2 <- list(
              pattern = map(p1_ameriflux_data_csv),
              format = 'file'),
   
-  # Combine all AmeriFlux feathers into a single file
+  # Split feather files into 5 groups
+  tar_group_count(p2_ameriflux_data_feather_tbl, 
+                  tibble(fn = p2_ameriflux_data_feather,
+                         # Including the hash so downstream steps get 
+                         # triggered with changes in file contents, since we 
+                         # no longer have `format = 'file'` attached.
+                         fhash = tools::md5sum(p2_ameriflux_data_feather)), 
+                  count = 5),
+  
+  # Combine all AmeriFlux feathers into 5 separate files
   tar_target(p2_ameriflux_data_all_csv, {
-    out_file <- '02_munge/out/ameriflux_data_all.csv'
-    map(p2_ameriflux_data_feather, read_feather) %>% 
-      bind_rows() %>% write_csv(out_file)
+    site_ids <- str_extract(p2_ameriflux_data_feather_tbl$fn, 'US-[A-z|0-9]{3}')
+    out_file <- sprintf('02_munge/out/ameriflux_data_grp%02d_%s_to_%s.csv',
+                        unique(p2_ameriflux_data_feather_tbl$tar_group),
+                        head(site_ids, 1), tail(site_ids, 1))
+    map(p2_ameriflux_data_feather_tbl$fn, read_feather) %>% 
+      bind_rows() %>% 
+      write_csv(out_file)
     return(out_file)
-  }, format = 'file'),
+  }, pattern = map(p2_ameriflux_data_feather_tbl),
+  format = 'file'),
   
   # Prepare all AmeriFlux data for quick summary plotting/exploration
   # Convert hourly to daily so that we have fewer data points
@@ -103,11 +117,13 @@ p2 <- list(
                           name = basename(p2_ameriflux_site_info_csv),
                           overwrite = TRUE)),
   
-  # Upload this CSV to Google Drive
+  # Upload the AmeriFlux CSVs to Google Drive
+  # Note: each of these take between 20-40 minutes to upload given their size.
   tar_target(p2_ameriflux_data_all_gd,
              drive_upload(p2_ameriflux_data_all_csv,
                           p2_gd_folder_20_Preprocessed,
                           name = basename(p2_ameriflux_data_all_csv),
-                          overwrite = TRUE))
+                          overwrite = TRUE),
+             pattern = map(p2_ameriflux_data_all_csv))
   
 )
